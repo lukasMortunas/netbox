@@ -24,6 +24,8 @@ Set these in Azure Portal > App Service > Configuration > Application Settings:
 DJANGO_SETTINGS_MODULE=netbox.settings
 WEBSITES_PORT=8000
 ALLOWED_HOSTS=netbox-v3-cpasbbgtgkfgd0hw.westeurope-01.azurewebsites.net
+CSRF_TRUSTED_ORIGINS=https://netbox-v3-cpasbbgtgkfgd0hw.westeurope-01.azurewebsites.net
+REDIS_SCHEME=rediss
 ```
 
 ### 3. Database Preparation
@@ -36,9 +38,10 @@ psql -h netbox-v3-server.postgres.database.azure.com -U nsssfcnofh -d postgres
 ```
 
 ### 4. Azure Resources Required
-- [x] Web App (Linux, Python 3.12)
+- [x] Web App for NetBox UI/API (Linux, Python 3.12-3.14)
+- [x] Web App for `netbox-rq` worker (same plan as UI/API)
 - [x] PostgreSQL Flexible Server
-- [x] Azure Cache for Redis
+- [x] Azure Cache for Redis (enable TLS)
 - [ ] Storage Account (for media files - optional but recommended)
 - [ ] Application Gateway or CDN (optional - for static files)
 
@@ -76,12 +79,24 @@ python netbox/manage.py collectstatic --noinput
 git push azure main
 ```
 
+In App Service, set the web app startup command to bind to the Azure-injected port:
+
+```
+gunicorn netbox.wsgi --config ./contrib/gunicorn.py --bind 0.0.0.0:${PORT:-8000}
+```
+
 ### 6. Post-Deployment Steps
 ```bash
 # SSH into Web App and run:
 python /home/site/wwwroot/netbox/manage.py migrate
 python /home/site/wwwroot/netbox/manage.py collectstatic --noinput
 python /home/site/wwwroot/netbox/manage.py createsuperuser
+```
+
+For the RQ worker App Service, set the startup command to:
+
+```
+python /home/site/wwwroot/netbox/manage.py rqworker high default low
 ```
 
 ## 🔒 Security Considerations
