@@ -293,7 +293,7 @@ DEFAULT_STORAGES = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
     "scripts": {
         "BACKEND": "extras.storage.ScriptFileSystemStorage",
